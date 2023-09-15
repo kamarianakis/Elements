@@ -1,7 +1,9 @@
 from pyassimp import load
-from gate_module_euclidean import *
+from gate_module_euclidean import vertex_weight, initialize_M, read_tree, eulerAnglesToRotationMatrix
 import Elements.features.GA.quaternion as quat
 import imgui
+import pathlib
+import numpy as np
 
 alpha = 0
 flag = False
@@ -13,9 +15,14 @@ def lerp(a, b, t):
     return (1 - t) * a + t * b
 
 #need to add 2 M arrays, one for Keyframe1 and and one for Keyframe2 
-def animation_initialize(file, ac, keyframe1, keyframe2, keyframe3 = None):
-    figure = load(os.path.join(os.path.dirname(__file__),file))
-    mesh_id = 3
+def animation_initialize(file, mesh_id= None, ac= None, keyframe1= None, keyframe2= None, keyframe3 = None):
+    if isinstance(file, str):
+        figure = load(file)
+    elif isinstance(file, pathlib.Path):
+        figure = load(str(file))
+    
+    if mesh_id == None:
+        mesh_id = 0
 
     #Vertices, Incdices/Faces, Bones from the scene we loaded with pyassimp
     mesh = figure.meshes[mesh_id]

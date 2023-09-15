@@ -19,9 +19,10 @@ from Elements.pyGLV.GL.VertexArray import VertexArray
 from Elements.pyGLV.GL.Scene import Scene
 from Elements.pyGLV.GL.SimpleCamera import SimpleCamera
 import Elements.utils.normals as norm
-from Elements.features.skinned_animation.skinned_animation import *
+from Elements.features.skinned_animation.skinned_animation import animation_initialize, animationGUI
 from Elements.features.skinned_animation.SkinnedAnimationSystem import SkinnedAnimationSystem
 from Elements.features.skinned_animation.AnimationComponent import Keyframe, AnimationComponents
+from Elements.definitions import SHADER_DIR, MODEL_DIR, TEXTURE_DIR
 
 class Light(Entity):
     def __init__(self, name=None, type=None, id=None) -> None:
@@ -173,7 +174,7 @@ def main(imguiFlag = False):
 
     #Spawn Animated AstroBoy 1
     node4 = scene.world.createEntity(Entity(name="Object"))
-    scene.world.addEntityChild(rootEntity, node4)
+    # scene.world.addEntityChild(rootEntity, node4)
     trans4 = scene.world.addComponent(node4, BasicTransform(name="Object_TRS", trs=util.scale(0.1)@util.translate(0,0,0) ))
     mesh4 = scene.world.addComponent(node4, RenderMesh(name="Object_mesh"))
     key1 = scene.world.addComponent(node4, Keyframe(name="Object_key_1"))
@@ -181,7 +182,9 @@ def main(imguiFlag = False):
     key3 = scene.world.addComponent(node4, Keyframe(name="Object_key_3"))
     ac = scene.world.addComponent(node4, AnimationComponents(name="Animation_Components"))
 
-    vertices, colors, boneWeight, boneID, faces = animation_initialize('astroBoy_walk.dae', ac, key1, key2, key3)
+    model_to_load = MODEL_DIR / 'astroBoy_walk.dae'
+    mesh_id = 3
+    vertices, colors, boneWeight, boneID, faces = animation_initialize(model_to_load, mesh_id, ac, key1, key2, key3)
     #print(np.array(key1.rotate, np.dtype(float)))
     #Generating normals
     v, i, _, normals = norm.generateFlatNormalsMesh(vertices , faces, colors)
@@ -190,15 +193,23 @@ def main(imguiFlag = False):
     testAnim.keyframes = [key1.array_MM[0],key2.array_MM[0]]
     #print(testAnim.keyframes)
 
+    TEST_TEX_COORDINATES = [
+    [0.0, 0.0],
+    [1.0, 0.0],
+    [1.0, 1.0],
+    [0.0, 0.0],
+    [1.0, 1.0],
+    [0.0, 1.0]]
+
     #Passing vertices, colors, normals, bone weights, bone ids to the Shader
     mesh4.vertex_attributes.append(v)
-    mesh4.vertex_attributes.append(Texture.TEST_TEX_COORDINATES*int(len(i)/6))
+    mesh4.vertex_attributes.append(TEST_TEX_COORDINATES*int(len(i)/6))
     mesh4.vertex_attributes.append(normals)
     mesh4.vertex_attributes.append(boneWeight)
     mesh4.vertex_attributes.append(boneID)
     mesh4.vertex_index.append(i)
     vArray4 = scene.world.addComponent(node4, VertexArray())
-    shaderDec4 = scene.world.addComponent(node4, ShaderGLDecorator(Shader(vertex_source = Shader.ANIMATION_SIMPLE_TEXTURE_PHONG_VERT, fragment_source=Shader.SIMPLE_TEXTURE_PHONG_FRAG)))
+    shaderDec4 = scene.world.addComponent(node4, ShaderGLDecorator(Shader(vertex_source = str(SHADER_DIR / "ANIMATION_SIMPLE_TEXTURE_PHONG_VERT.frag"), fragment_source=Shader.SIMPLE_TEXTURE_PHONG_FRAG)))
 
 
 ##################################################################################################################################
@@ -212,7 +223,7 @@ def main(imguiFlag = False):
     key3_2 = scene.world.addComponent(node4_2, Keyframe(name="Object_key_3"))
     ac_2 = scene.world.addComponent(node4_2, AnimationComponents(name="Animation_Components_2"))
 
-    vertices_2, colors_2, boneWeight_2, boneID_2, faces_2 = animation_initialize('astroBoy_walk.dae', ac_2, key1_2, key2_2, key3_2)
+    vertices_2, colors_2, boneWeight_2, boneID_2, faces_2 = animation_initialize(model_to_load, mesh_id, ac_2, key1_2, key2_2, key3_2)
     #Generating normals
     normals_2 = norm.generateNormals(vertices_2 , faces_2)
 
@@ -227,7 +238,7 @@ def main(imguiFlag = False):
     mesh4_2.vertex_attributes.append(boneID_2)
     mesh4_2.vertex_index.append(faces_2)
     vArray4 = scene.world.addComponent(node4_2, VertexArray())
-    shaderDec4_2 = scene.world.addComponent(node4_2, ShaderGLDecorator(Shader(vertex_source = Shader.VERT_ANIMATION, fragment_source=Shader.FRAG_PHONG)))
+    shaderDec4_2 = scene.world.addComponent(node4_2, ShaderGLDecorator(Shader(vertex_source = str(SHADER_DIR / "VERT_ANIMATION.frag"), fragment_source=Shader.FRAG_PHONG)))
 
 ##################################################################################################################################
     # MAIN RENDERING LOOP
@@ -285,7 +296,7 @@ def main(imguiFlag = False):
     eManager._publishers[updateBackground.name] = gGUI
 
 
-    texture = os.path.join(os.path.dirname(__file__), "dark_wood_texture.jpg")
+    texture = str(TEXTURE_DIR /  "dark_wood_texture.jpg")
     shaderDec4.setUniformVariable(key='ImageTexture', value=texture, texture=True)
 
 

@@ -9,19 +9,20 @@ import OpenGL.GL as gl;
 import Elements.pyECSS.math_utilities as util
 from Elements.pyECSS.System import  TransformSystem, CameraSystem
 from Elements.pyECSS.Entity import Entity
-from Elements.pyECSS.Component import BasicTransform,  RenderMesh, Keyframe, AnimationComponents
+from Elements.pyECSS.Component import BasicTransform,  RenderMesh 
 from Elements.pyECSS.Event import Event
 
+from Elements.pyGLV.GL.Textures import Texture
 from Elements.pyGLV.GUI.Viewer import  RenderGLStateSystem,  ImGUIecssDecorator
 from Elements.pyGLV.GL.Shader import InitGLShaderSystem, Shader, ShaderGLDecorator, RenderGLShaderSystem
 from Elements.pyGLV.GL.VertexArray import VertexArray
 from Elements.pyGLV.GL.Scene import Scene
 from Elements.pyGLV.GL.SimpleCamera import SimpleCamera
 import Elements.utils.normals as norm
-from Elements.pyGLV.GL.Textures import Texture
-from Elements.features.skinned_animation.skinned_animation import *
-from SkinnedAnimationSystem import SkinnedAnimationSystem
-
+from Elements.features.skinned_animation.skinned_animation import animation_initialize, animationGUI
+from Elements.features.skinned_animation.SkinnedAnimationSystem import SkinnedAnimationSystem
+from Elements.features.skinned_animation.AnimationComponent import Keyframe, AnimationComponents
+from Elements.definitions import SHADER_DIR, MODEL_DIR, TEXTURE_DIR
 
 class Light(Entity):
     def __init__(self, name=None, type=None, id=None) -> None:
@@ -169,8 +170,9 @@ def main(imguiFlag = False):
     pointLight = PointLight();
     pointLight.trans.trs = util.translate(0.8, 1, 1) @ util.scale(0.2)
     scene.world.addEntityChild(rootEntity, pointLight);
+##################################################################################################################################
 
-    #Spawn Animated AstroBoy
+    #Spawn Animated AstroBoy 1
     node4 = scene.world.createEntity(Entity(name="Object"))
     scene.world.addEntityChild(rootEntity, node4)
     trans4 = scene.world.addComponent(node4, BasicTransform(name="Object_TRS", trs=util.scale(0.1)@util.translate(0,0,0) ))
@@ -180,25 +182,65 @@ def main(imguiFlag = False):
     key3 = scene.world.addComponent(node4, Keyframe(name="Object_key_3"))
     ac = scene.world.addComponent(node4, AnimationComponents(name="Animation_Components"))
 
-    vertices, colors, boneWeight, boneID, faces = animation_initialize('astroBoy_walk.dae', ac, key1, key2, key3)
+    model_to_load = MODEL_DIR / 'astroBoy_walk.dae'
+    mesh_id = 3
+    vertices, colors, boneWeight, boneID, faces = animation_initialize(model_to_load, mesh_id, ac, key1, key2, key3)
     #print(np.array(key1.rotate, np.dtype(float)))
     #Generating normals
-    v, i, c, normals = norm.generateFlatNormalsMesh(vertices , faces, colors)
+    v, i, _, normals = norm.generateFlatNormalsMesh(vertices , faces, colors)
 
     testAnim = SkinnedAnimationSystem()
     testAnim.keyframes = [key1.array_MM[0],key2.array_MM[0]]
     #print(testAnim.keyframes)
 
+    TEST_TEX_COORDINATES = [
+    [0.0, 0.0],
+    [1.0, 0.0],
+    [1.0, 1.0],
+    [0.0, 0.0],
+    [1.0, 1.0],
+    [0.0, 1.0]]
+
     #Passing vertices, colors, normals, bone weights, bone ids to the Shader
     mesh4.vertex_attributes.append(v)
-    mesh4.vertex_attributes.append(Texture.TEST_TEX_COORDINATES*int(len(i)/6))
+    mesh4.vertex_attributes.append(TEST_TEX_COORDINATES*int(len(i)/6))
     mesh4.vertex_attributes.append(normals)
     mesh4.vertex_attributes.append(boneWeight)
     mesh4.vertex_attributes.append(boneID)
     mesh4.vertex_index.append(i)
     vArray4 = scene.world.addComponent(node4, VertexArray())
-    shaderDec4 = scene.world.addComponent(node4, ShaderGLDecorator(Shader(vertex_source = Shader.ANIMATION_SIMPLE_TEXTURE_PHONG_VERT, fragment_source=Shader.SIMPLE_TEXTURE_PHONG_FRAG)))
+    shaderDec4 = scene.world.addComponent(node4, ShaderGLDecorator(Shader(vertex_source = str(SHADER_DIR / "ANIMATION_SIMPLE_TEXTURE_PHONG_VERT.frag"), fragment_source=Shader.SIMPLE_TEXTURE_PHONG_FRAG)))
 
+
+##################################################################################################################################
+    #Spawn Animated AstroBoy 2
+    node4_2 = scene.world.createEntity(Entity(name="Object"))
+    scene.world.addEntityChild(rootEntity, node4_2)
+    trans4_2 = scene.world.addComponent(node4_2, BasicTransform(name="Object_TRS", trs=util.scale(0.1)@util.translate(3,0,0) ))
+    mesh4_2 = scene.world.addComponent(node4_2, RenderMesh(name="Object_mesh"))
+    key1_2 = scene.world.addComponent(node4_2, Keyframe(name="Object_key_1"))
+    key2_2 = scene.world.addComponent(node4_2, Keyframe(name="Object_key_2"))
+    key3_2 = scene.world.addComponent(node4_2, Keyframe(name="Object_key_3"))
+    ac_2 = scene.world.addComponent(node4_2, AnimationComponents(name="Animation_Components_2"))
+
+    vertices_2, colors_2, boneWeight_2, boneID_2, faces_2 = animation_initialize(model_to_load, mesh_id, ac_2, key1_2, key2_2, key3_2)
+    #Generating normals
+    normals_2 = norm.generateNormals(vertices_2 , faces_2)
+
+
+    testAnim_2 = SkinnedAnimationSystem()
+    testAnim_2.keyframes = [key1_2.array_MM[0], key2_2.array_MM[0], key3_2.array_MM[0]]
+
+    mesh4_2.vertex_attributes.append(vertices_2)
+    mesh4_2.vertex_attributes.append(colors_2)
+    mesh4_2.vertex_attributes.append(normals_2)
+    mesh4_2.vertex_attributes.append(boneWeight_2)
+    mesh4_2.vertex_attributes.append(boneID_2)
+    mesh4_2.vertex_index.append(faces_2)
+    vArray4 = scene.world.addComponent(node4_2, VertexArray())
+    shaderDec4_2 = scene.world.addComponent(node4_2, ShaderGLDecorator(Shader(vertex_source = str(SHADER_DIR / "VERT_ANIMATION.frag"), fragment_source=Shader.FRAG_PHONG)))
+
+##################################################################################################################################
     # MAIN RENDERING LOOP
     running = True
     scene.init(imgui=True, windowWidth = 1024, windowHeight = 800, windowTitle = "Elements: A CameraSystem Example", customImGUIdecorator = ImGUIecssDecorator)
@@ -252,8 +294,9 @@ def main(imguiFlag = False):
 
     # Add RenderWindow to the EventManager publishers
     eManager._publishers[updateBackground.name] = gGUI
-    
-    texture = os.path.join(os.path.dirname(__file__), "dark_wood_texture.jpg")
+
+
+    texture = str(TEXTURE_DIR /  "dark_wood_texture.jpg")
     shaderDec4.setUniformVariable(key='ImageTexture', value=texture, texture=True)
 
 
@@ -267,6 +310,17 @@ def main(imguiFlag = False):
     shaderDec4.setUniformVariable(key='shininess',value=Mshininess,float1=True)
     shaderDec4.setUniformVariable(key='matColor',value=Mcolor,float3=True)
 
+
+    shaderDec4_2.setUniformVariable(key='BB', value=ac_2.bones[0], arraymat4=True)
+    shaderDec4_2.setUniformVariable(key='ambientColor', value=ambientLight.color, float3=True);
+    shaderDec4_2.setUniformVariable(key='ambientStr', value=ambientLight.intensity, float1=True);
+    
+    shaderDec4_2.setUniformVariable(key='lightColor', value=np.array(pointLight.color), float3=True);
+    shaderDec4_2.setUniformVariable(key='lightIntensity', value=pointLight.intensity, float1=True);
+
+    shaderDec4_2.setUniformVariable(key='shininess',value=Mshininess,float1=True)
+    shaderDec4_2.setUniformVariable(key='matColor',value=Mcolor,float3=True)
+
     # pointLight.trans.trs = util.scale(0.2)
     while running:
 
@@ -279,16 +333,28 @@ def main(imguiFlag = False):
         #for i in [1,2]:
 
         MM = testAnim.apply2AnimationComponents(ac)
+        #MM = animationLoop(key1, key2)
 
         shaderDec4.setUniformVariable(key='modelViewProj', value=trans4.l2cam, mat4=True);
         shaderDec4.setUniformVariable(key='model',value=trans4.l2world,mat4=True)
 
-        
         shaderDec4.setUniformVariable(key='MM', value=MM, arraymat4=True)
 
         shaderDec4.setUniformVariable(key='viewPos', value=viewPos, float3=True);
         shaderDec4.setUniformVariable(key='lightPos', value=lightPos, float3=True);
-        
+
+
+        MM_2 = testAnim_2.apply2AnimationComponents(ac_2)
+
+        shaderDec4_2.setUniformVariable(key='modelViewProj', value=trans4_2.l2cam, mat4=True);
+        shaderDec4_2.setUniformVariable(key='model',value=trans4_2.l2world,mat4=True)
+
+        shaderDec4_2.setUniformVariable(key='MM', value=MM_2, arraymat4=True)
+
+        shaderDec4_2.setUniformVariable(key='viewPos', value=viewPos, float3=True);
+        shaderDec4_2.setUniformVariable(key='lightPos', value=lightPos, float3=True);
+
+
         # call SDLWindow/ImGUI display() and ImGUI event input process
         running = scene.render()
         # call the GL State render System
