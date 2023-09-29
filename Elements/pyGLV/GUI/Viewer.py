@@ -702,7 +702,7 @@ class ImGUIDecorator(RenderDecorator):
         gl.glClearColor(*self._colorEditor, 1.0)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         #render the ImGUI widgets
-        self.extra()
+        # self.extra()
         #draw scenegraph tree widget
         self.scenegraphVisualiser()
         #print(f'{self.getClassName()}: display()')
@@ -1024,7 +1024,10 @@ class ImGUIecssDecorator(ImGUIDecorator):
             sceneRoot = "ECSS Root Entity"
         
         twoColumn = False
-
+        imgui.set_next_window_size(300.0, 200.0)
+        
+        #start new ImGUI frame context
+        imgui.new_frame()
         if twoColumn:
             # 2 Column Version
             imgui.begin("ECSS graph")
